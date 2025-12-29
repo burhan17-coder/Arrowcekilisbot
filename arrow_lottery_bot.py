@@ -289,7 +289,7 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler('blokkaldirall', remove_all_blocks))
 
     # Count messages (non-command texts)
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, on_message))
+    dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, on_message))
 
     updater.start_polling()
     updater.idle()

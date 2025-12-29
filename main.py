@@ -66,12 +66,12 @@ def handle_photo_raffle(message):
         bot.reply_to(message, "❌ Fotoğrafın altına /cekilis veya /cekilisall + ödül metni yazmalısın.")
         return
 
-    if caption.startswith('/cekilis '):
+    if caption.startswith('/cekilisall '):
         block_winners = True
-        prize_text = caption[len('/cekilis '):].strip()
-    elif caption.startswith('/cekilisall '):
-        block_winners = False
         prize_text = caption[len('/cekilisall '):].strip()
+    elif caption.startswith('/cekilis '):
+        block_winners = False
+        prize_text = caption[len('/cekilis '):].strip()
     else:
         bot.reply_to(message, "❌ Caption /cekilis veya /cekilisall ile başlamalı.")
         return

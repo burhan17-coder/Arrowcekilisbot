@@ -67,11 +67,11 @@ def handle_photo_raffle(message):
         return
 
     if caption.startswith('/cekilis '):
-    block_winners = True  # Normal çekiliş, blok koy
-    prize_text = caption[len('/cekilis '):].strip()
-elif caption.startswith('/cekilisall '):
-    block_winners = False  # All, blok koyma
-    prize_text = caption[len('/cekilisall '):].strip()
+        block_winners = True   # Normal çekiliş → blok koyacak
+        prize_text = caption[len('/cekilis '):].strip()
+    elif caption.startswith('/cekilisall '):
+        block_winners = False  # All → blok koymayacak
+        prize_text = caption[len('/cekilisall '):].strip()
     else:
         bot.reply_to(message, "❌ Caption /cekilis veya /cekilisall ile başlamalı.")
         return
@@ -106,12 +106,9 @@ elif caption.startswith('/cekilisall '):
     active_raffle['message_id'] = sent.message_id
 
 # METİNLE ÇEKİLİŞ
+# METİNLE ÇEKİLİŞ
 @bot.message_handler(commands=['cekilis', 'cekilisall'])
 def handle_text_raffle(message):
-    block_winners = 'cekilisall' not in message.text.lower()
-    text = ' '.join(message.text.split()[1:]).strip()
-    prize = text if text else "Arrow Çekilişi 🎉"
-
     if not is_admin(message.chat.id, message.from_user.id):
         bot.reply_to(message, "❌ Sadece yöneticiler çekiliş başlatabilir!")
         return
@@ -119,6 +116,12 @@ def handle_text_raffle(message):
     if active_raffle.get('message_id') is not None:
         bot.reply_to(message, "⚠️ Zaten aktif çekiliş var! /iptal veya /cek kullan.")
         return
+
+    # Blok mantığı: cekilisall varsa blok koyma, yoksa koy
+    block_winners = not 'cekilisall' in message.text.lower()
+
+    text = ' '.join(message.text.split()[1:]).strip()
+    prize = text if text else "Arrow Çekilişi 🎉"
 
     active_raffle['prize'] = prize
     active_raffle['winner_count'] = 1

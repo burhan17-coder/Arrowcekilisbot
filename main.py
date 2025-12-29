@@ -10,6 +10,7 @@ TOKEN = os.environ['BOT_TOKEN']
 
 bot = telebot.TeleBot(TOKEN)
 
+# Aktif çekiliş - güvenli erişim için .get() kullanacağız
 active_raffle = {
     'message_id': None,
     'chat_id': None,
@@ -56,7 +57,7 @@ def handle_photo_raffle(message):
     if not is_admin(message.chat.id, message.from_user.id):
         return
 
-    if active_raffle['message_id'] is not None:
+    if active_raffle.get('message_id') is not None:
         bot.reply_to(message, "⚠️ Zaten aktif çekiliş var! Önce /iptal veya /cek kullan.")
         return
 
@@ -115,7 +116,7 @@ def handle_text_raffle(message):
         bot.reply_to(message, "❌ Sadece yöneticiler çekiliş başlatabilir!")
         return
 
-    if active_raffle['message_id'] is not None:
+    if active_raffle.get('message_id') is not None:
         bot.reply_to(message, "⚠️ Zaten aktif çekiliş var! /iptal veya /cek kullan.")
         return
 
@@ -151,7 +152,7 @@ def set_winner_count(message):
         bot.reply_to(message, "❌ Sadece yöneticiler ayar yapabilir!")
         return
 
-    if active_raffle['message_id'] is None:
+    if active_raffle.get('message_id') is None:
         bot.reply_to(message, "⚠️ Aktif çekiliş yok!")
         return
 
@@ -173,7 +174,7 @@ def edit_prize(message):
         bot.reply_to(message, "❌ Sadece yöneticiler düzenleyebilir!")
         return
 
-    if active_raffle['message_id'] is None:
+    if active_raffle.get('message_id') is None:
         bot.reply_to(message, "⚠️ Aktif çekiliş yok!")
         return
 
@@ -189,11 +190,11 @@ def edit_prize(message):
 # KATILANLAR
 @bot.message_handler(commands=['katilanlar'])
 def list_participants(message):
-    if active_raffle['message_id'] is None:
+    if active_raffle.get('message_id') is None:
         bot.reply_to(message, "⚠️ Aktif çekiliş yok!")
         return
 
-    participants = list(active_raffle['participants'])
+    participants = list(active_raffle.get('participants', set()))
     if not participants:
         bot.reply_to(message, "😔 Henüz kimse katılmadı.")
         return
@@ -201,7 +202,7 @@ def list_participants(message):
     text = f"👥 **Katılanlar ({len(participants)} kişi)**:\n\n"
     for i, user_id in enumerate(participants, 1):
         try:
-            member = bot.get_chat_member(active_raffle['chat_id'], user_id)
+            member = bot.get_chat_member(active_raffle.get('chat_id'), user_id)
             user = member.user
             mention = get_user_mention(user)
         except:
@@ -217,14 +218,14 @@ def cancel_raffle(message):
         bot.reply_to(message, "❌ Sadece yöneticiler iptal edebilir!")
         return
 
-    if active_raffle['message_id'] is None:
+    if active_raffle.get('message_id') is None:
         bot.reply_to(message, "⚠️ İptal edilecek çekiliş yok.")
         return
 
     try:
         bot.edit_message_text(
-            chat_id=active_raffle['chat_id'],
-            message_id=active_raffle['message_id'],
+            chat_id=active_raffle.get('chat_id'),
+            message_id=active_raffle.get('message_id'),
             text="❌ **Çekiliş iptal edildi!**",
             parse_mode='Markdown'
         )
@@ -336,7 +337,7 @@ def show_stats(message):
 
     avg_participation = 0
     if total_raffles > 0:
-        total_participation_all = sum(len(r['winners']) + len(r['participants']) for r in raffle_history) if raffle_history else 0
+        total_participation_all = sum(len(r['participants']) for r in raffle_history) if raffle_history else 0
         avg_participation = round(total_participation_all / total_raffles, 1)
 
     text = (
@@ -356,18 +357,18 @@ def join_raffle(call):
     user_id = call.from_user.id
     chat_id = call.message.chat.id
 
-    if active_raffle['chat_id'] != chat_id or active_raffle['message_id'] != call.message.message_id:
+    if active_raffle.get('chat_id') != chat_id or active_raffle.get('message_id') != call.message.message_id:
         bot.answer_callback_query(call.id, "Bu çekiliş bitmiş.", show_alert=True)
         return
 
-    if user_id in blocked_users and active_raffle['block_winners']:
+    if user_id in blocked_users and active_raffle.get('block_winners'):
         remaining = int(blocked_users[user_id] - time.time())
         hours = remaining // 3600
         minutes = (remaining % 3600) // 60
         bot.answer_callback_query(call.id, f"⛔ 24 saat bloklusun! Kalan: {hours}h {minutes}dk", show_alert=True)
         return
 
-    if user_id in active_raffle['participants']:
+    if user_id in active_raffle.get('participants', set()):
         bot.answer_callback_query(call.id, "Zaten katıldın! 🎯")
         return
 
@@ -377,27 +378,27 @@ def join_raffle(call):
     update_raffle_message()
 
 def update_raffle_message():
-    if active_raffle['message_id'] is None:
+    if active_raffle.get('message_id') is None:
         return
 
-    participant_count = len(active_raffle['participants'])
+    participant_count = len(active_raffle.get('participants', set()))
     markup = types.InlineKeyboardMarkup()
     button = types.InlineKeyboardButton("🎉 Katıl", callback_data="join_raffle")
     markup.add(button)
 
-    block_text = "" if active_raffle['block_winners'] else "\n⚠️ Bu çekilişte blok uygulanmıyor!"
+    block_text = "" if active_raffle.get('block_winners') else "\n⚠️ Bu çekilişte blok uygulanmıyor!"
 
     text = (
         f"🎯 **ARROW ÇEKİLİŞ DEVAM EDİYOR!**{block_text}\n\n"
-        f"🎁 **Ödül:** {active_raffle['prize']}\n\n"
+        f"🎁 **Ödül:** {active_raffle.get('prize', 'Arrow Çekilişi')}\n\n"
         f"👥 Katılan: {participant_count} kişi\n"
-        f"🏆 Kazanan sayısı: {active_raffle['winner_count']} kişi"
+        f"🏆 Kazanan sayısı: {active_raffle.get('winner_count', 1)} kişi"
     )
 
     try:
         bot.edit_message_text(
-            chat_id=active_raffle['chat_id'],
-            message_id=active_raffle['message_id'],
+            chat_id=active_raffle.get('chat_id'),
+            message_id=active_raffle.get('message_id'),
             text=text,
             reply_markup=markup,
             parse_mode='Markdown'
@@ -412,11 +413,11 @@ def end_raffle(message):
         bot.reply_to(message, "❌ Sadece yöneticiler bitirebilir!")
         return
 
-    if active_raffle['message_id'] is None:
+    if active_raffle.get('message_id') is None:
         bot.reply_to(message, "⚠️ Aktif çekiliş yok!")
         return
 
-    participants = list(active_raffle['participants'])
+    participants = list(active_raffle.get('participants', set()))
 
     if len(participants) == 0:
         bot.reply_to(message, "😢 Kimse katılmadı, çekiliş otomatik sonlandırıldı.")
@@ -426,47 +427,47 @@ def end_raffle(message):
         active_raffle['block_winners'] = True
         return
 
-    if len(participants) < active_raffle['winner_count']:
-        bot.reply_to(message, f"😔 Yeterli katılım yok ({len(participants)} / {active_raffle['winner_count']}), çekiliş sonlandırıldı.")
+    if len(participants) < active_raffle.get('winner_count', 1):
+        bot.reply_to(message, f"😔 Yeterli katılım yok ({len(participants)} / {active_raffle.get('winner_count', 1)}), çekiliş sonlandırıldı.")
         active_raffle.clear()
         active_raffle['prize'] = 'Arrow Çekilişi'
         active_raffle['winner_count'] = 1
         active_raffle['block_winners'] = True
         return
 
-    winners = random.sample(participants, active_raffle['winner_count'])
+    winners = random.sample(participants, active_raffle.get('winner_count', 1))
 
     winner_text = ""
     for i, winner_id in enumerate(winners, 1):
         try:
-            member = bot.get_chat_member(active_raffle['chat_id'], winner_id)
+            member = bot.get_chat_member(active_raffle.get('chat_id'), winner_id)
             user = member.user
             mention = get_user_mention(user)
         except:
             mention = f"Kullanıcı {winner_id}"
         winner_text += f"{i}. 🎉 {mention}\n"
 
-        if active_raffle['block_winners']:
+        if active_raffle.get('block_winners'):
             blocked_users[winner_id] = time.time() + 24 * 3600
 
-    block_warning = "\n\nKazananlar 24 saat yeni çekilişe katılamaz ⏳" if active_raffle['block_winners'] else "\n\nBu çekilişte 24 saat blok uygulanmadı ⚠️"
+    block_warning = "\n\nKazananlar 24 saat yeni çekilişe katılamaz ⏳" if active_raffle.get('block_winners') else "\n\nBu çekilişte 24 saat blok uygulanmadı ⚠️"
 
     result_text = (
         f"🏆 **ARROW ÇEKİLİŞ SONUÇLARI!**\n\n"
-        f"🎁 **Ödül:** {active_raffle['prize']}\n\n"
+        f"🎁 **Ödül:** {active_raffle.get('prize', 'Arrow Çekilişi')}\n\n"
         f"**Kazananlar ({len(winners)} kişi):**\n\n"
         f"{winner_text}\n"
         f"Tebrikler! 🎊{block_warning}"
     )
 
-    bot.send_message(active_raffle['chat_id'], result_text, parse_mode='Markdown', disable_web_page_preview=True)
+    bot.send_message(active_raffle.get('chat_id'), result_text, parse_mode='Markdown', disable_web_page_preview=True)
 
     raffle_history.insert(0, {
-        'prize': active_raffle['prize'],
+        'prize': active_raffle.get('prize', 'Arrow Çekilişi'),
         'winners': winners,
-        'winner_count': active_raffle['winner_count'],
+        'winner_count': active_raffle.get('winner_count', 1),
         'date': time.time(),
-        'block_applied': active_raffle['block_winners']
+        'block_applied': active_raffle.get('block_winners')
     })
     if len(raffle_history) > 10:
         raffle_history.pop()
@@ -489,7 +490,7 @@ if __name__ == '__main__':
             try:
                 bot.infinity_polling(none_stop=True, interval=0, timeout=20)
             except Exception as e:
-                print(f"Polling hatası: {e}. 5 saniye sonra yeniden başlıyor...")
+                print(f"Polling hatası: {e}. Yeniden başlatılıyor...")
                 time.sleep(5)
 
     threading.Thread(target=run_polling, daemon=True).start()

@@ -8,7 +8,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 TOKEN = os.environ['BOT_TOKEN']
 
-bot = telebot.Telebot(TOKEN)
+bot = telebot.TeleBot(TOKEN)
 
 active_raffle = {
     'message_id': None,
@@ -50,7 +50,7 @@ def get_user_mention(user):
     else:
         return f"[{user.first_name}](tg://user?id={user.id})"
 
-# FOTOĞRAFLI ÇEKİLİŞ
+# YENİ: Fotoğraflı çekiliş
 @bot.message_handler(content_types=['photo'])
 def handle_photo_raffle(message):
     if not is_admin(message.chat.id, message.from_user.id):
@@ -104,13 +104,16 @@ def handle_photo_raffle(message):
 
     active_raffle['message_id'] = sent.message_id
 
-# METİNLE ÇEKİLİŞ
-@bot.message_handler(commands=['cekilis', 'cekilisall'])
-def handle_text_raffle(message):
-    block_winners = 'cekilisall' in message.text.lower()
-    text = ' '.join(message.text.split()[1:]).strip()
-    prize = text if text else "Arrow Çekilişi 🎉"
+# Metinle çekiliş (eski komutlar)
+@bot.message_handler(commands=['cekilis'])
+def start_normal(message):
+    start_text_raffle(message, block_winners=True)
 
+@bot.message_handler(commands=['cekilisall'])
+def start_no_block(message):
+    start_text_raffle(message, block_winners=False)
+
+def start_text_raffle(message, block_winners):
     if not is_admin(message.chat.id, message.from_user.id):
         bot.reply_to(message, "❌ Sadece yöneticiler çekiliş başlatabilir!")
         return
@@ -118,6 +121,9 @@ def handle_text_raffle(message):
     if active_raffle['message_id'] is not None:
         bot.reply_to(message, "⚠️ Zaten aktif çekiliş var! /iptal veya /cek kullan.")
         return
+
+    text = ' '.join(message.text.split()[1:]).strip()
+    prize = text if text else "Arrow Çekilişi 🎉"
 
     active_raffle['prize'] = prize
     active_raffle['winner_count'] = 1
@@ -144,7 +150,7 @@ def handle_text_raffle(message):
 
     active_raffle['message_id'] = sent.message_id
 
-# Diğer komutlar (kazanan, duzenle, katilanlar, iptal, blokekaldir, bloklistesi, gecmis, istatistik, cek, join_raffle, update_raffle_message aynı kalıyor, önceki tam koddan al)
+# Diğer komutlar (kazanan, duzenle, katilanlar, iptal, blokekaldir, bloklistesi, gecmis, istatistik, cek, join_raffle, update_raffle_message, finalize_raffle_end aynı kalıyor, önceki tam koddan al)
 
 print("Arrow Çekiliş Botu başlatılıyor... 🎯")
 
@@ -156,7 +162,7 @@ if __name__ == '__main__':
             try:
                 bot.infinity_polling(none_stop=True, interval=0, timeout=20)
             except Exception as e:
-                print(f"Polling hatası: {e}. Yeniden başlatılıyor...")
+                print(f"Polling hatası: {e}")
                 time.sleep(5)
 
     threading.Thread(target=run_polling, daemon=True).start()

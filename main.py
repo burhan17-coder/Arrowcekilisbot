@@ -66,12 +66,12 @@ def handle_photo_raffle(message):
         bot.reply_to(message, "❌ Fotoğrafın altına /cekilis veya /cekilisall + ödül metni yazmalısın.")
         return
 
-    if caption.startswith('/cekilisall '):
-        block_winners = True
-        prize_text = caption[len('/cekilisall '):].strip()
-    elif caption.startswith('/cekilis '):
-        block_winners = False
-        prize_text = caption[len('/cekilis '):].strip()
+    if caption.startswith('/cekilis '):
+    block_winners = True  # Normal çekiliş, blok koy
+    prize_text = caption[len('/cekilis '):].strip()
+elif caption.startswith('/cekilisall '):
+    block_winners = False  # All, blok koyma
+    prize_text = caption[len('/cekilisall '):].strip()
     else:
         bot.reply_to(message, "❌ Caption /cekilis veya /cekilisall ile başlamalı.")
         return
@@ -108,7 +108,7 @@ def handle_photo_raffle(message):
 # METİNLE ÇEKİLİŞ
 @bot.message_handler(commands=['cekilis', 'cekilisall'])
 def handle_text_raffle(message):
-    block_winners = 'cekilisall' in message.text.lower()
+    block_winners = 'cekilisall' not in message.text.lower()
     text = ' '.join(message.text.split()[1:]).strip()
     prize = text if text else "Arrow Çekilişi 🎉"
 

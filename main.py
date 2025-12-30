@@ -485,23 +485,39 @@ def end_raffle(message):
 
 print("Arrow Çekiliş Botu başlatılıyor... 🎯")
 
+from flask import Flask, request, abort
+import logging
+
+app = Flask(__name__)
+
+@app.route('/bot', methods=['POST'])
+def webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return '', 200
+    else:
+        abort(403)
+
+@app.route('/')
+def home():
+    return "Arrow Çekiliş Botu çalışıyor! 🎯"
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-
-    def run_polling():
-        while True:
-            try:
-                bot.infinity_polling(none_stop=True, interval=0, timeout=20)
-            except Exception as e:
-                print(f"Polling hatası: {e}. Yeniden başlatılıyor...")
-                time.sleep(5)
-
-    threading.Thread(target=run_polling, daemon=True).start()
-
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"Arrow Cekilis Botu calisiyor!")
-
-    HTTPServer(('', port), Handler).serve_forever()
+    # İlk çalıştırmada webhook ayarla
+    bot.remove_webhook()
+    time.sleep(1)
+    webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
+    bot.set_webhook(url=webhook_url)
+    print(f"Webhook başarıyla ayarlandı: {webhook_url}")
+    
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
+else:
+    # Render'da çalışırken otomatik ayarla
+    bot.remove_webhook()
+    time.sleep(1)
+    webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
+    bot.set_webhook(url=webhook_url)
+    print(f"Webhook ayarlandı: {webhook_url}")

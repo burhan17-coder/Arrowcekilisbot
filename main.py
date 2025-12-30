@@ -485,32 +485,15 @@ def end_raffle(message):
 
 print("Arrow Çekiliş Botu başlatılıyor... 🎯")
 
-from flask import Flask, request, abort
-import os
-import time
+import telebot
 
-app = Flask(__name__)
+bot = telebot.TeleBot("BOT_TOKEN")
 
-@app.route('/bot', methods=['POST'])
-def webhook():
-    if request.headers.get('content-type') == 'application/json':
-        json_string = request.get_data().decode('utf-8')
-        update = telebot.types.Update.de_json(json_string)
-        bot.process_new_updates([update])
-        return '', 200
-    else:
-        abort(403)
+# Handler'larını ekle...
+# @bot.message_handler...
 
-@app.route('/')
-def home():
-    return "Arrow Çekiliş Botu 7/24 aktif! 🎯"
-
-# Deploy başladığında webhook'u kur
-print("Webhook ayarlanıyor...")
+# Webhook varsa kaldır (zaten üstte delete ettik)
 bot.remove_webhook()
-time.sleep(2)
-webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
-success = bot.set_webhook(url=webhook_url)
-print(f"Webhook kuruldu mu? {success} - URL: {webhook_url}")
-if not success:
-    print("Webhook kurulamadı! Manuel kontrol et.")
+
+# Polling başlat
+bot.polling(none_stop=True)

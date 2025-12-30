@@ -503,15 +503,13 @@ def webhook():
 
 @app.route('/')
 def home():
-    return "Arrow Çekiliş Botu 7/24 çalışıyor! 🎯"
+    return "Arrow Çekiliş Botu 7/24 aktif! 🎯"
 
-# Webhook'u otomatik ayarla (her deploy'da çalışır)
+# Her deploy'da webhook'u temizleyip yeniden kur
 bot.remove_webhook()
 time.sleep(2)
 webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
-set_result = bot.set_webhook(url=webhook_url)
-print(f"Webhook ayar sonucu: {set_result} - URL: {webhook_url}")
+success = bot.set_webhook(url=webhook_url)
+print(f"Webhook kuruldu mu? {success} - URL: {webhook_url}")
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+# Render production için gunicorn kullanıyor, __name__ == '__main__' kısmını sil

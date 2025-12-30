@@ -485,23 +485,3 @@ def end_raffle(message):
 
 print("Arrow Çekiliş Botu başlatılıyor... 🎯")
 
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-
-    def run_polling():
-        while True:
-            try:
-                bot.infinity_polling(none_stop=True, interval=0, timeout=20)
-            except Exception as e:
-                print(f"Polling hatası: {e}. Yeniden başlatılıyor...")
-                time.sleep(5)
-
-    threading.Thread(target=run_polling, daemon=True).start()
-
-    class Handler(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.end_headers()
-            self.wfile.write(b"Arrow Cekilis Botu calisiyor!")
-
-    HTTPServer(('', port), Handler).serve_forever()

@@ -486,7 +486,8 @@ def end_raffle(message):
 print("Arrow Çekiliş Botu başlatılıyor... 🎯")
 
 from flask import Flask, request, abort
-import logging
+import os
+import time
 
 app = Flask(__name__)
 
@@ -502,22 +503,15 @@ def webhook():
 
 @app.route('/')
 def home():
-    return "Arrow Çekiliş Botu çalışıyor! 🎯"
+    return "Arrow Çekiliş Botu 7/24 çalışıyor! 🎯"
+
+# Webhook'u otomatik ayarla (her deploy'da çalışır)
+bot.remove_webhook()
+time.sleep(2)
+webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
+set_result = bot.set_webhook(url=webhook_url)
+print(f"Webhook ayar sonucu: {set_result} - URL: {webhook_url}")
 
 if __name__ == '__main__':
-    # İlk çalıştırmada webhook ayarla
-    bot.remove_webhook()
-    time.sleep(1)
-    webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
-    bot.set_webhook(url=webhook_url)
-    print(f"Webhook başarıyla ayarlandı: {webhook_url}")
-    
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
-else:
-    # Render'da çalışırken otomatik ayarla
-    bot.remove_webhook()
-    time.sleep(1)
-    webhook_url = f"https://{os.environ.get('RENDER_EXTERNAL_HOSTNAME')}/bot"
-    bot.set_webhook(url=webhook_url)
-    print(f"Webhook ayarlandı: {webhook_url}")
